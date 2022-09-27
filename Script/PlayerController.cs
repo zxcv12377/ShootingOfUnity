@@ -87,6 +87,15 @@ public class PlayerController : MonoBehaviour
         playerInfo.Damage = 10f;
 
     }
+    private void StopToWall()
+    {
+        Debug.DrawRay(CharacterBody.transform.position, CharacterBody.transform.forward * 1, Color.black);
+        isBorder = Physics.Raycast(CharacterBody.transform.position, CharacterBody.transform.forward, 1, LayerMask.GetMask("Wall"));
+    }
+    private void FreezeRotation()
+    {
+        rb.angularVelocity = Vector3.zero;
+    }
 
     private void FixedUpdate()
     {
@@ -127,14 +136,18 @@ public class PlayerController : MonoBehaviour
             bool isMove = moveInput.magnitude != 0;
             animator.SetFloat("Move", moveInput.magnitude);
 
-            if (isMove || isBorder)
+            if (isMove)
             {
                 Vector3 lookForward = new Vector3(cameraArm.forward.x, 0f, cameraArm.forward.z).normalized;
                 Vector3 lookRight = new Vector3(cameraArm.right.x, 0f, cameraArm.right.z).normalized;
                 Vector3 moveDir = lookForward * moveInput.y + lookRight * moveInput.x;
-
                 CharacterBody.forward = moveDir;
-                transform.position += moveDir * Time.deltaTime * moveSpeed;
+                if (!isBorder)
+                {
+                    transform.position += moveDir * Time.deltaTime * moveSpeed;
+                }
+
+                
                 if (GetSpeed() < 3)
                 {
                     isWalk = true;
@@ -189,7 +202,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void Reload() // 장전 함수
+    public void Reload() // 장전 함수 
     {
         if(currentBullet != maxBullet)
         {
@@ -205,7 +218,7 @@ public class PlayerController : MonoBehaviour
         currentBullet = maxBullet;
     }
 
-    public void muzzleOn()
+    public void muzzleOn() // (애니메이션 이벤트에서 사용중)
     {
         muzzleFlash.gameObject.SetActive(true);
         muzzleFlash.time = 0.12f;
@@ -213,52 +226,46 @@ public class PlayerController : MonoBehaviour
 
     }
 
-    public void muzzleStop()
+    public void muzzleStop() // (애니메이션 이벤트에서 사용중)
     {
         muzzleFlash.gameObject.SetActive(false);
         muzzleFlash.Stop();
     }
 
-    private void StopToWall()
-    {
-        Debug.DrawRay(transform.position, transform.forward * 3, Color.green);
-        isBorder = Physics.Raycast(transform.position, transform.forward, 3, LayerMask.GetMask("Wall"));
-    }
-    private void FreezeRotation()
-    {
-        rb.angularVelocity = Vector3.zero;
-    }
+    
 
     public void OnTriggerEnter(Collider other)
     {
+        if(other.tag == "Enemy" || other.tag == "EnemyBullet")
+        {
+            enemyController = other.GetComponent<EnemyContoller>();
 
-        enemyController = other.GetComponent<EnemyContoller>();
-        
 
-        if (other.tag == "EnemyBullet")
-        {
-            EnemyBullet enemyBullet = other.GetComponent<EnemyBullet>();
-            playerInfo.CurrentHP -= enemyBullet.BulletDamage;
-            Debug.Log("EnemyBullet Hit! \n 현재 HP : " + playerInfo.CurrentHP);
-        }
-        else if (other.tag == "Enemy")
-        {
-            MeleeAreaAttack meleeAttack = other.GetComponent<MeleeAreaAttack>();
-            playerInfo.CurrentHP -= meleeAttack.meleeAttackDamage;
-            Debug.Log("Enemy Melee Hit! \n 현재 HP : " + playerInfo.CurrentHP);
-        }
-        if (playerInfo.CurrentHP <= 0)
-        {
-            Die();
+            if (other.tag == "EnemyBullet")
+            {
+                EnemyBullet enemyBullet = other.GetComponent<EnemyBullet>();
+                playerInfo.CurrentHP -= enemyBullet.BulletDamage;
+                Debug.Log("EnemyBullet Hit! \n 현재 HP : " + playerInfo.CurrentHP);
+            }
+            else if (other.tag == "Enemy")
+            {
+                MeleeAreaAttack meleeAttack = other.GetComponent<MeleeAreaAttack>();
+                playerInfo.CurrentHP -= meleeAttack.meleeAttackDamage;
+                Debug.Log("Enemy Melee Hit! \n 현재 HP : " + playerInfo.CurrentHP);
+            }
+            if (playerInfo.CurrentHP <= 0)
+            {
+                Die();
+            }
         }
     }
 
-    public void endLanding()
+    public void endLanding() // (애니메이션 이벤트에서 사용중)
     {
         isLanding = false;
     }
 
-    public void Landing()
+    public void Landing() // (애니메이션 이벤트에서 사용중)
     {
         isLanding = true;
     }
